@@ -29,53 +29,69 @@ struct movie* createMovie(char *line) {
         printf("Memory allocation failed!\n");
         exit(1);
     }
-    char *saveptr;
 
-    char *token = strtok(line, ",");
+    char *token;
+    char *csv_ptr;  //pointer for CSV tokenization
+
+    // Tokenize Title
+    token = strtok_r(line, ",", &csv_ptr);
     if (!token) {
         free(newMovie);
         return NULL;
     }
     newMovie->title = strdup(token);
-    
-    token = strtok(NULL, ",");
+
+    // Tokenize Year
+    token = strtok_r(NULL, ",", &csv_ptr);
     if (!token) {
         free(newMovie->title);
         free(newMovie);
         return NULL;
     }
     newMovie->year = atoi(token);
-    
-    token = strtok(NULL, ",");
+
+    // Tokenize Languages
+    token = strtok_r(NULL, ",", &csv_ptr);
     if (!token) {
         free(newMovie->title);
         free(newMovie);
         return NULL;
     }
-    char langStr[100];
-    strncpy(langStr, token + 1, sizeof(langStr) - 1);
-    langStr[strlen(langStr) - 1] = '\0';
-    
+        
+    if (token[0] == '[') token++;       //Remove surrounding brackets if needed:
+    size_t lenToken = strlen(token);
+    if (token[lenToken - 1] == ']') {
+        token[lenToken - 1] = '\0';
+    }
+
+        //Tokenize languages using a separate token.
+    char *languages = strdup(token);
     int langCount = 0;
-    char *langToken = strtok(langStr, ";");
+    char *lang_ptr;         //context pointer for languages tokenization
+    char *langToken = strtok_r(languages, ";", &lang_ptr);
+
     while (langToken != NULL && langCount < 5) {
         strncpy(newMovie->languages[langCount], langToken, sizeof(newMovie->languages[langCount]) - 1);
+        newMovie->languages[langCount][sizeof(newMovie->languages[langCount]) - 1] = '\0';
         langCount++;
-        langToken = strtok(NULL, ";");
+        langToken = strtok_r(NULL, ";", &lang_ptr);
     }
-    
-    //Tokenize ratings
-    token = strtok_r(NULL, ",", &saveptr);
+    free(languages);
+
+    // Tokenize Rating
+    token = strtok_r(NULL, ",", &csv_ptr);
     if (!token || strlen(token) == 0) {
         printf("Warning: Missing rating for movie %s. Setting rating to 0.0\n", newMovie->title);
         newMovie->rating = 0.0;
     } else {
+        while (*token == ' ') token++;         //Skip any spaces.
         newMovie->rating = strtof(token, NULL);
     }
-    
+
     newMovie->next = NULL;
     return newMovie;
 }
+
 
 // Function to process file and store movies in a linked list
 struct movie* processMovieFile(char* filePath, int *movieCount) {
@@ -161,7 +177,7 @@ void showMoviesByLanguage(struct movie *head, char *language) {
 }
 
 void showMenu() {
-    printf("\n 1. Show movies released in the specified year \n");
+    printf("\n1. Show movies released in the specified year \n");
     printf("2. Show highest rated movie for each year \n");
     printf("3. Show the title and year of release of all movies in a specific language \n");
     printf("4. Exit from the program \n");
