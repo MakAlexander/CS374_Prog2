@@ -1,24 +1,36 @@
+/*
+ My program reads a CSV file containing movie data, processes the data into a linked list of movie structures,
+ and allows the user to interact with the data through a menu.
+ The user can:
+ 1. View movies released in a specific year.
+ 2. See the highest-rated movie for each year.
+ 3. Find movies available in a specific language.
+ 4. Exit the program.
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // Define a struct for movie
-typedef struct movie {
+struct movie {
     char *title;
     int year;
     char languages[5][20];
     float rating;
     struct movie *next;
-} movie;
+};
 
-// Function to create a new movie node
-movie* createMovie(char *line) {
-    movie *newMovie = malloc(sizeof(movie));
+// Function to tokenize data from movie csv
+struct movie* createMovie(char *line) {
+    struct movie *newMovie = malloc(sizeof(struct movie));
     if (!newMovie) {
         printf("Memory allocation failed!\n");
         exit(1);
     }
-    
+    char *saveptr;
+
     char *token = strtok(line, ",");
     if (!token) {
         free(newMovie);
@@ -52,8 +64,9 @@ movie* createMovie(char *line) {
         langToken = strtok(NULL, ";");
     }
     
-    token = strtok(NULL, ",");
-    if (!token) {
+    //Tokenize ratings
+    token = strtok_r(NULL, ",", &saveptr);
+    if (!token || strlen(token) == 0) {
         printf("Warning: Missing rating for movie %s. Setting rating to 0.0\n", newMovie->title);
         newMovie->rating = 0.0;
     } else {
@@ -65,7 +78,7 @@ movie* createMovie(char *line) {
 }
 
 // Function to process file and store movies in a linked list
-movie* processMovieFile(char* filePath, int *movieCount) {
+struct movie* processMovieFile(char* filePath, int *movieCount) {
     FILE *file = fopen(filePath, "r");
     if (!file) {
         printf("Could not open file %s\n", filePath);
@@ -74,17 +87,17 @@ movie* processMovieFile(char* filePath, int *movieCount) {
     
     char *line = NULL;
     size_t len = 0;
-    movie *head = NULL, *tail = NULL;
+    struct movie *head = NULL, *tail = NULL;
     
     if (getline(&line, &len, file) == -1) {
-        printf("Error: Empty file or read failure\n");
+        printf("Error: Empty file or read failure \n");
         fclose(file);
         return NULL;
     }
     
     *movieCount = 0;
     while (getline(&line, &len, file) != -1) {
-        movie *newMovie = createMovie(line);
+       struct movie *newMovie = createMovie(line);
         if (!newMovie) continue;
         (*movieCount)++;
         
@@ -100,11 +113,11 @@ movie* processMovieFile(char* filePath, int *movieCount) {
     free(line);
     fclose(file);
     
-    printf("Processed file %s and parsed data for %d movies\n", filePath, *movieCount);
+    printf("Processed file %s and parsed data for %d movies \n", filePath, *movieCount);
     return head;
 }
 
-void showMoviesByYear(movie *head, int year) {
+void showMoviesByYear(struct movie *head, int year) {
     int found = 0;
     while (head) {
         if (head->year == year) {
@@ -113,11 +126,11 @@ void showMoviesByYear(movie *head, int year) {
         }
         head = head->next;
     }
-    if (!found) printf("No data about movies released in the year %d\n", year);
+    if (!found) printf("No data about movies released in the year %d \n", year);
 }
 
-void showHighestRatedMovies(movie *head) {
-    movie *bestMovies[3000] = {NULL};
+void showHighestRatedMovies(struct movie *head) {
+    struct movie *bestMovies[3000] = {NULL};
     while (head) {
         int idx = head->year - 1900;
         if (!bestMovies[idx] || head->rating > bestMovies[idx]->rating) {
@@ -132,7 +145,7 @@ void showHighestRatedMovies(movie *head) {
     }
 }
 
-void showMoviesByLanguage(movie *head, char *language) {
+void showMoviesByLanguage(struct movie *head, char *language) {
     int found = 0;
     while (head) {
         for (int i = 0; i < 5; i++) {
@@ -144,24 +157,24 @@ void showMoviesByLanguage(movie *head, char *language) {
         }
         head = head->next;
     }
-    if (!found) printf("No data about movies released in %s\n", language);
+    if (!found) printf("No data about movies released in %s \n", language);
 }
 
 void showMenu() {
-    printf("\n1. Show movies released in the specified year\n");
-    printf("2. Show highest rated movie for each year\n");
-    printf("3. Show the title and year of release of all movies in a specific language\n");
-    printf("4. Exit from the program\n");
+    printf("\n 1. Show movies released in the specified year \n");
+    printf("2. Show highest rated movie for each year \n");
+    printf("3. Show the title and year of release of all movies in a specific language \n");
+    printf("4. Exit from the program \n");
 }
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        printf("Usage: %s <movies_sample_1.csv>\n", argv[0]);
+        printf("Usage: %s <movies_sample_1.csv> \n", argv[0]);
         return EXIT_FAILURE;
     }
     
     int movieCount;
-    movie *movies = processMovieFile(argv[1], &movieCount);
+    struct movie *movies = processMovieFile(argv[1], &movieCount);
     if (!movies) {
         printf("Error: No movies were processed. Exiting.\n");
         return EXIT_FAILURE;
